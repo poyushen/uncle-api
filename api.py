@@ -257,7 +257,6 @@ def update_group(group_date: str, group: Group):
     """
 
     body_date = datetime.strftime(group.__dict__["出團日期"], "%Y-%m-%d")
-    print(group_date, body_date, group_date == body_date)
 
     if group_date != body_date:
         raise HTTPException(
@@ -357,7 +356,6 @@ def update_location(loc: str, location: Location):
         raise HTTPException(status_code=404, detail=f"Location {loc} not found.")
 
     new_loc = location.__dict__["地點"]
-    print(new_loc)
 
     sql = f"""
         UPDATE PRAISE.dbo.T_地點
@@ -395,7 +393,6 @@ def get_currency_by_name(currency_name: str) -> Currency:
 
     sql = f"SELECT * FROM PRAISE.dbo.T_貨幣 WHERE 貨幣名稱 = N'{currency_name}'"
     df = fetch_data(sql)
-    print(df)
     if df is None:
         raise HTTPException(
             status_code=404, detail=f"Currency with name {currency_name} not found"
@@ -503,11 +500,10 @@ def get_groupusers_by_date(group_date: str) -> List[GroupUser]:
             detail=f"Group User date {group_date} not found.",
         )
 
+    df = df.sort_values("姓名").reset_index(drop=True)
     output = []
     for i in df.index:
         output.append({k: df[k].iloc[i] for k in GroupUser.__fields__.keys()})
-
-    print(len(output))
 
     return output
 
