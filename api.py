@@ -5,6 +5,8 @@ from typing import List
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from db import fetch_data, insert_data, exec_table
 from schema import User, Group, Location, Currency, GroupUser
@@ -22,7 +24,12 @@ app.add_middleware(
 NUM_COLS = json.load(open("./num_cols.json", "r"))
 
 
-@app.get("/users/", tags=["user"])
+@app.get("/")
+async def index():
+    return FileResponse("build/index.html")
+
+
+@app.get("/api/users/", tags=["user"])
 def get_users() -> List[User]:
     """
     Get all users in T_客戶
@@ -40,7 +47,7 @@ def get_users() -> List[User]:
     return output
 
 
-@app.get("/user/", tags=["user"])
+@app.get("/api/user/", tags=["user"])
 def get_user_by_id(user_id: str) -> User:
     """
     Get user with [user_id] in T_客戶
@@ -58,7 +65,7 @@ def get_user_by_id(user_id: str) -> User:
     return output
 
 
-@app.post("/user/", tags=["user"])
+@app.post("/api/user/", tags=["user"])
 def create_user(user: User):
     """
     Create new user in T_客戶
@@ -85,7 +92,7 @@ def create_user(user: User):
     insert_data(sql, data)
 
 
-@app.delete("/user/", tags=["user"])
+@app.delete("/api/user/", tags=["user"])
 def delete_user(user_id: str):
     """
     Delete user with [user_id] in T_客戶
@@ -103,7 +110,7 @@ def delete_user(user_id: str):
     exec_table(sql)
 
 
-@app.put("/user/", tags=["user"])
+@app.put("/api/user/", tags=["user"])
 def update_user(user_id: str, user: User):
     """
     Update user with [user_id] in T_客戶
@@ -140,7 +147,7 @@ def update_user(user_id: str, user: User):
     exec_table(sql)
 
 
-@app.get("/groups/", tags=["group"])
+@app.get("/api/groups/", tags=["group"])
 def get_groups() -> List[Group]:
     """
     Get all groups in T_旅行團
@@ -164,7 +171,7 @@ def get_groups() -> List[Group]:
     return output
 
 
-@app.get("/group/", tags=["group"])
+@app.get("/api/group/", tags=["group"])
 def get_group_by_date(group_date: str) -> Group:
     """
     Get group with [group date] in T_旅行團
@@ -193,7 +200,7 @@ def get_group_by_date(group_date: str) -> Group:
     return output
 
 
-@app.post("/group/", tags=["group"])
+@app.post("/api/group/", tags=["group"])
 def create_group(group: Group):
     """
     Create new group in T_旅行團
@@ -221,7 +228,7 @@ def create_group(group: Group):
     insert_data(sql, data)
 
 
-@app.delete("/group/", tags=["group"])
+@app.delete("/api/group/", tags=["group"])
 def delete_group(group_date: str):
     """
     Delete group with [group_date] in T_旅行團
@@ -241,7 +248,7 @@ def delete_group(group_date: str):
     exec_table(sql)
 
 
-@app.put("/group/", tags=["group"])
+@app.put("/api/group/", tags=["group"])
 def update_group(group_date: str, group: Group):
     """
     Update group with [group_date] in T_旅行團
@@ -285,7 +292,7 @@ def update_group(group_date: str, group: Group):
     exec_table(sql)
 
 
-@app.get("/locations/", tags=["location"])
+@app.get("/api/locations/", tags=["location"])
 def get_locations() -> list:
     """
     Get all locations in T_地點
@@ -305,7 +312,7 @@ def get_locations() -> list:
     return output
 
 
-@app.post("/location/", tags=["location"])
+@app.post("/api/location/", tags=["location"])
 def create_location(location: Location):
     """
     Create new location in T_地點
@@ -322,7 +329,7 @@ def create_location(location: Location):
     insert_data(sql, data)
 
 
-@app.delete("/location/", tags=["location"])
+@app.delete("/api/location/", tags=["location"])
 def delete_location(loc: str):
     """
     Delete location [loc] in T_地點
@@ -338,7 +345,7 @@ def delete_location(loc: str):
     exec_table(sql)
 
 
-@app.put("/location/", tags=["location"])
+@app.put("/api/location/", tags=["location"])
 def update_location(loc: str, location: Location):
     """
     Update location [loc] in T_地點
@@ -361,7 +368,7 @@ def update_location(loc: str, location: Location):
     exec_table(sql)
 
 
-@app.get("/currencies", tags=["currency"])
+@app.get("/api/currencies/", tags=["currency"])
 def get_currencies() -> List[Currency]:
     """
     Get all currencies in T_貨幣
@@ -380,7 +387,7 @@ def get_currencies() -> List[Currency]:
     return output
 
 
-@app.get("/currency/", tags=["currency"])
+@app.get("/api/currency/", tags=["currency"])
 def get_currency_by_name(currency_name: str) -> Currency:
     """
     Get currency with name [currency_name] in T_貨幣
@@ -399,7 +406,7 @@ def get_currency_by_name(currency_name: str) -> Currency:
     return output
 
 
-@app.post("/currency/", tags=["currency"])
+@app.post("/api/currency/", tags=["currency"])
 def create_currency(currency: Currency):
     """
     Create new currency in T_貨幣
@@ -426,7 +433,7 @@ def create_currency(currency: Currency):
     insert_data(sql, data)
 
 
-@app.delete("/currency/", tags=["currency"])
+@app.delete("/api/currency/", tags=["currency"])
 def delete_currency(currency_name: str):
     """
     Delete currency with name [currency_name] in T_貨幣
@@ -445,7 +452,7 @@ def delete_currency(currency_name: str):
     exec_table(sql)
 
 
-@app.put("/currency/", tags=["currency"])
+@app.put("/api/currency/", tags=["currency"])
 def update_currency(currency_name: str, currency: Currency):
     """
     Update currency with name [currency_name] in T_貨幣
@@ -482,7 +489,7 @@ def update_currency(currency_name: str, currency: Currency):
     exec_table(sql)
 
 
-@app.get("/groupusers/", tags=["group user"])
+@app.get("/api/groupusers/", tags=["group user"])
 def get_groupusers_by_date(group_date: str) -> List[GroupUser]:
     """
     Get group users with date [group_date] in T_旅行團客戶
@@ -505,7 +512,7 @@ def get_groupusers_by_date(group_date: str) -> List[GroupUser]:
     return output
 
 
-@app.get("/groupuser/", tags=["group user"])
+@app.get("/api/groupuser/", tags=["group user"])
 def get_groupuser_by_id_date(user_id: str, group_date: str) -> GroupUser:
     """
     Get group user with ID[user_id] and date [group_date] in T_旅行團客戶
@@ -524,7 +531,7 @@ def get_groupuser_by_id_date(user_id: str, group_date: str) -> GroupUser:
     return output
 
 
-@app.post("/groupuser/", tags=["group user"])
+@app.post("/api/groupuser/", tags=["group user"])
 def create_groupuser(group_user: GroupUser):
     """
     Create new group user in T_旅行團客戶
@@ -554,7 +561,7 @@ def create_groupuser(group_user: GroupUser):
     insert_data(sql, data)
 
 
-@app.delete("/groupuser/", tags=["group user"])
+@app.delete("/api/groupuser/", tags=["group user"])
 def delete_groupuser(user_id: str, group_date):
     """
     Delete group user with ID [user_id] and date [group_date] in T_旅行團客戶
@@ -573,7 +580,7 @@ def delete_groupuser(user_id: str, group_date):
     exec_table(sql)
 
 
-@app.put("/groupuser/", tags=["group user"])
+@app.put("/api/groupuser/", tags=["group user"])
 def update_groupuser(user_id: str, group_date: str, group_user: GroupUser):
     """
     Update group user with ID [user_id] and date [group_date] in T_旅行團客戶
@@ -614,3 +621,6 @@ def update_groupuser(user_id: str, group_date: str, group_user: GroupUser):
     """
 
     exec_table(sql)
+
+
+app.mount("/", StaticFiles(directory="build", html=True), name="build")
