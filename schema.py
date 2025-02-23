@@ -101,6 +101,8 @@ class Group(BaseModel):
     團隊領款單_台支金額: str | None = None
     團隊領款單_外幣: str | None = None
     團隊領款單_外幣金額: str | None = None
+    update_time: datetime | None = None
+    客戶總數: int | None = None
 
     model_config = {
         "json_schema_extra": {
@@ -154,6 +156,8 @@ class Group(BaseModel):
                     "團隊領款單_台支金額": None,
                     "團隊領款單_外幣": None,
                     "團隊領款單_外幣金額": None,
+                    "update_time": None,
+                    "客戶總數": None,
                 },
             ]
         }

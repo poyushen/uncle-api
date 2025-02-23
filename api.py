@@ -2,12 +2,22 @@ import json
 from datetime import datetime
 from typing import List
 
+import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from db import fetch_data, insert_data, exec_table
 from schema import User, Group, Location, Currency, GroupUser
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_headers=["*"],
+    allow_methods=["*"],
+    allow_origins=["*"],
+)
 
 NUM_COLS = json.load(open("./num_cols.json", "r"))
 
@@ -141,9 +151,15 @@ def get_groups() -> List[Group]:
     if df is None:
         raise HTTPException(status_code=404, detail="No Group in DB.")
 
+    sql2 = "SELECT 出團日期, COUNT(客戶ID) AS 客戶總數 FROM PRAISE.dbo.T_旅行團客戶 GROUP BY 出團日期"
+    df2 = fetch_data(sql2)
+
+    merged_df = pd.merge(df, df2, on="出團日期", how="left")
+    merged_df["客戶總數"] = merged_df["客戶總數"].fillna(0)
+
     output = []
-    for i in df.index:
-        output.append({k: df[k].iloc[i] for k in Group.__fields__.keys()})
+    for i in merged_df.index:
+        output.append({k: merged_df[k].iloc[i] for k in Group.__fields__.keys()})
 
     return output
 
@@ -163,7 +179,16 @@ def get_group_by_date(group_date: str) -> Group:
             status_code=404, detail=f"Group with date {group_date} not found."
         )
 
-    output = {k: df[k].iloc[0] for k in Group.__fields__.keys()}
+    sql2 = f"SELECT 出團日期, COUNT(客戶ID) AS 客戶總數 FROM PRAISE.dbo.T_旅行團客戶 WHERE 出團日期 = '{group_date}' GROUP BY 出團日期"
+    df2 = fetch_data(sql2)
+
+    if df2 is None:
+        merged_df = df
+        df["客戶總數"] = 0
+    else:
+        merged_df = pd.merge(df, df2, on="出團日期")
+
+    output = {k: merged_df[k].iloc[0] for k in Group.__fields__.keys()}
 
     return output
 
@@ -183,6 +208,7 @@ def create_group(group: Group):
         )
 
     cols = list(Group.__fields__.keys())
+    cols = [col for col in cols if col not in ["update_time", "客戶總數"]]
     types = ",".join(["%d" if col in NUM_COLS["T_旅行團"] else "%s" for col in cols])
     sql = f"""
         INSERT INTO PRAISE.dbo.T_旅行團 ({", ".join(cols)}, add_time, add_user_id, update_time, update_user_id)
@@ -241,6 +267,8 @@ def update_group(group_date: str, group: Group):
 
     infos = []
     for k, v in group.__dict__.items():
+        if k in ["update_time", "客戶總數"]:
+            continue
         if v is None:
             infos.append(f"{k} = NULL")
         elif k in NUM_COLS["T_旅行團"]:
@@ -258,7 +286,7 @@ def update_group(group_date: str, group: Group):
 
 
 @app.get("/locations/", tags=["location"])
-def get_locations() -> List[Location]:
+def get_locations() -> list:
     """
     Get all locations in T_地點
     """
@@ -271,7 +299,8 @@ def get_locations() -> List[Location]:
 
     output = []
     for i in df.index:
-        output.append({k: df[k].iloc[i] for k in Location.__fields__.keys()})
+        output.append(df["地點"].iloc[i])
+        # output.append({k: df[k].iloc[i] for k in Location.__fields__.keys()})
 
     return output
 
@@ -503,7 +532,7 @@ def create_groupuser(group_user: GroupUser):
 
     user_id = group_user.__dict__["客戶ID"]
     group_date = group_user.__dict__["出團日期"]
-    fetch_sql = f"SELECT * FROM PRAISE.dbo.T_旅行團客戶 WHERE ID = '{user_id}' AND 出團日期 = '{group_date}'"
+    fetch_sql = f"SELECT * FROM PRAISE.dbo.T_旅行團客戶 WHERE 客戶ID = '{user_id}' AND 出團日期 = '{group_date}'"
     df = fetch_data(fetch_sql)
     if df is not None:
         raise HTTPException(
@@ -555,7 +584,7 @@ def update_groupuser(user_id: str, group_date: str, group_user: GroupUser):
             status_code=404,
             detail=f"User ID {user_id} and {group_user.__dict__['客戶ID']} not matched.",
         )
-    if group_date != group_user.__dict__["出團日期"]:
+    if group_date != datetime.strftime(group_user.__dict__["出團日期"], "%Y-%m-%d"):
         raise HTTPException(
             status_code=404,
             detail=f"Group date {group_date} and {group_user.__dict__['出團日期']} not matched.",
